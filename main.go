@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"log"
 	"net/http"
-	"time"
 )
 
 type Genre struct {
@@ -13,8 +12,8 @@ type Genre struct {
 	Subgenres map[string]string `json:"subgenres"`
 }
 
-func metalHandler(w http.ResponseWriter, r *http.Request) {
-	metal := Genre{
+var genres = map[string]Genre{
+	"metal": {
 		Name: "metal",
 		Rate: 6,
 		Subgenres: map[string]string{
@@ -22,33 +21,37 @@ func metalHandler(w http.ResponseWriter, r *http.Request) {
 			"BT": "british",
 			"TH": "Thrash",
 		},
+	},
+	"pop": {
+		Name: "pop",
+		Rate: 6,
+		Subgenres: map[string]string{
+			"KP": "kpop",
+			"MI": "melodica italiana",
+			"60": "sixties",
+		},
+	},
+}
+
+func genreHandler(w http.ResponseWriter, r *http.Request) {
+
+	value := r.URL.Query().Get("name")
+	var result []byte
+	var err error
+
+	if value == "metal" || value == "pop" {
+		result, err = json.Marshal(genres[value])
+	} else {
+		http.Error(w, "Unknown genre", http.StatusBadRequest)
 	}
 
-	result, err := json.Marshal(metal)
 	if err != nil {
 		http.Error(w, "Error on json", 500)
 	}
 	w.Write([]byte(result))
 }
 
-var start time.Time
-
-func logRequest(handler http.HandlerFunc) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
-		start = time.Now()
-		log.Printf("Request on process: %s - %s\r", r.Method, r.URL.Path)
-		handler.ServeHTTP(w, r)
-	}
-}
-
-func logResponse(handler http.HandlerFunc) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
-		handler.ServeHTTP(w, r)
-		log.Printf("Request processed in %d\r", time.Since(start).Milliseconds())
-	}
-}
-
 func main() {
-	http.HandleFunc("/metal", logRequest(logResponse(metalHandler)))
+	http.HandleFunc("/genre", genreHandler)
 	log.Fatal(http.ListenAndServe(":8080", nil))
 }
