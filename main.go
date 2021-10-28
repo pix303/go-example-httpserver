@@ -12,9 +12,24 @@ type GenreResponse struct {
 	Rate  int    `json:"rate"`
 }
 
+type BluesHandler struct{}
+
+func (bh BluesHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	mockResult := GenreResponse{"Blues", 8}
+	result, err := json.Marshal(mockResult)
+	if err != nil {
+		http.Error(w, fmt.Sprintf("Error on parsing data: %s", err.Error()), http.StatusInternalServerError)
+		return
+	}
+
+	w.Write(result)
+}
+
 func main() {
 
 	mux := http.NewServeMux()
+	bh := BluesHandler{}
+	mux.Handle("/blues", bh)
 	mux.HandleFunc("/metal", func(w http.ResponseWriter, r *http.Request) {
 		mockResult := GenreResponse{
 			"Britsh Metal", 6,
